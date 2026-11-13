@@ -136,7 +136,7 @@ function flow(x: number, y: number): number[] {
 const SKY = ['#0c1a4a', '#16307a', '#1f47a0', '#2f66b8', '#4a86c8', '#7aaed8', '#a9cde6'].map(hex);
 const GOLD = ['#fff8d8', '#ffe98a', '#ffd23f', '#f6b42c', '#e8892a'].map(hex);
 const SEA = ['#06102e', '#0b1c48', '#123066', '#1d4a80', '#2d6b94'].map(hex);
-const ROCK = ['#05090c', '#0b1514', '#13221d', '#1d3128', '#2a2f3c'].map(hex);
+const ROCK = ['#060a14', '#0d1a24', '#152c30', '#21403a', '#353c5c', '#54476a'].map(hex);
 
 function pick(pal: number[][], t: number): number[] {
   t = clamp(t, 0, 0.9999) * (pal.length - 1);
@@ -148,7 +148,11 @@ function colorAt(x: number, y: number): number[] {
   const j = (rnd() - 0.5) * 0.28;
   if (inCliff(x, y)) {
     const glow = Math.exp(-Math.pow(Math.hypot(x - LANTERN[0], y - LANTERN[1]) / 160, 2));
-    return mix(pick(ROCK, 0.25 + j * 1.6 + Math.sin(x * 0.05 + y * 0.03) * 0.2), GOLD[4], glow * 0.25);
+    let c = pick(ROCK, 0.3 + j * 1.7 + Math.sin(x * 0.05 + y * 0.03) * 0.22 - (y - 640) / 1400);
+    // moonlight catches the crest of the headland
+    const rim = Math.exp(-Math.max(0, y - cliffTop(x)) / 9);
+    c = mix(c, pick(SKY, 0.55 + rnd() * 0.3), rim * 0.6);
+    return mix(c, GOLD[3], glow * 0.38);
   }
   if (y > HORIZON) {
     // the beam and moon reflected as a broken gold column
@@ -354,6 +358,30 @@ for (const mx of [-8, 0, 8]) fillShape((x, y) => Math.abs(x - LX - mx) < 0.8 && 
 // roof cap
 fillShape((x, y) => y <= 431 && y > 404 && Math.abs(x - LX) < (y - 404) * 0.68, () => hex('#3a1210'), LX - 20, 402, LX + 20, 432);
 fillShape((x, y) => Math.hypot(x - LX, y - 401) < 3.2, () => hex('#3a1210'), LX - 4, 397, LX + 4, 405);
+// a lone fishing boat in the gold reflection, its sailor looking up at the whirl
+const BX = 690;
+const BY = 866;
+fillShape(
+  (x, y) => {
+    const u = (x - BX) / 46;
+    if (Math.abs(u) > 1) return false;
+    const top = BY - 7 * Math.pow(Math.max(0, -u), 3) - 3 * Math.pow(Math.max(0, u), 3);
+    return y >= top && y <= BY + 15 * (1 - u * u);
+  },
+  (x, y) => mix(hex('#140c0c'), hex('#4a2a18'), clamp((BY + 14 - y) / 22, 0, 1) * 0.5),
+  BX - 48, BY - 9, BX + 48, BY + 16,
+);
+fillShape((x, y) => Math.abs(x - (BX + 6)) < 1.3 && y > BY - 70 && y < BY, () => hex('#1a100c'), BX + 3, BY - 72, BX + 9, BY);
+fillShape(
+  (x, y) => x > BX + 8 && y > BY - 66 && y < BY - 5 && (x - BX - 8) < (y - (BY - 66)) * 0.62,
+  (x, y) => mix(hex('#fff0c4'), hex('#e0a050'), clamp((x - BX - 8) / 38, 0, 1)),
+  BX + 8, BY - 67, BX + 48, BY - 4,
+);
+fillShape((x, y) => Math.hypot(x - (BX - 20), y - (BY - 17)) < 4.2, () => hex('#120a0a'), BX - 26, BY - 23, BX - 14, BY - 11);
+fillShape((x, y) => Math.abs(x - (BX - 20)) < 4.5 - (y - (BY - 13)) * -0.05 && y > BY - 13 && y < BY, () => hex('#120a0a'), BX - 26, BY - 14, BX - 14, BY);
+glow(BX - 34, BY - 8, 5, [255, 220, 140], 1.2);
+glow(BX - 34, BY - 8, 18, [255, 170, 80], 0.35);
+
 glow(LANTERN[0], LANTERN[1] - 2, 26, [255, 230, 150], 1.1);
 glow(LANTERN[0], LANTERN[1] - 2, 70, [255, 190, 90], 0.45);
 
